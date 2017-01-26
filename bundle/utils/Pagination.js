@@ -4,21 +4,16 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
 var _solfegejs = require("solfegejs");
 
 var _solfegejs2 = _interopRequireDefault(_solfegejs);
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 /**
  * An util class to compute the pagination values based on the request
  */
-
-var Pagination = (function () {
+class Pagination {
     /**
      * Constructor
      *
@@ -26,19 +21,16 @@ var Pagination = (function () {
      * @param   {Integer}                       max         The maximum items to paginate
      * @param   {solfege.bundle.server.Request} request     The request
      */
-
-    function Pagination(items, max, request) {
-        _classCallCheck(this, Pagination);
-
+    constructor(items, max, request) {
         this.items = items;
 
         // Default values
-        var page = 1;
-        var count = 25;
-        var range = null;
-        var offset = null;
-        var limit = null;
-        var total = items.length;
+        let page = 1;
+        let count = 25;
+        let range = null;
+        let offset = null;
+        let limit = null;
+        let total = items.length;
 
         // Cap the items to return
         if (count > max) {
@@ -54,7 +46,7 @@ var Pagination = (function () {
         }
         if (request.query.range) {
             // Paginate with the range parameter
-            var rangeSplit = request.query.range.split("-");
+            let rangeSplit = request.query.range.split("-");
             if (rangeSplit.length === 2) {
                 offset = parseInt(rangeSplit[0]);
                 limit = parseInt(rangeSplit[1]);
@@ -83,7 +75,7 @@ var Pagination = (function () {
         }
 
         // Calculate the page count
-        var pageCount = Math.ceil(total / count);
+        let pageCount = Math.ceil(total / count);
 
         // Expose the values
         this.count = count;
@@ -98,22 +90,15 @@ var Pagination = (function () {
      *
      * @return  {array}     The list
      */
-
-    _createClass(Pagination, [{
-        key: "getList",
-        value: function getList() {
-            var list = [];
-            var index = this.offset;
-            for (; index <= this.limit; index++) {
-                list.push(this.items[index]);
-            }
-
-            return list;
+    getList() {
+        let list = [];
+        let index = this.offset;
+        for (; index <= this.limit; index++) {
+            list.push(this.items[index]);
         }
-    }]);
 
-    return Pagination;
-})();
-
-exports["default"] = Pagination;
-module.exports = exports["default"];
+        return list;
+    }
+}
+exports.default = Pagination;
+module.exports = exports['default'];

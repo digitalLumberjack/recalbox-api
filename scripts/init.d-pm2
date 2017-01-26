@@ -11,6 +11,7 @@ export PM2_HOME="/root/.pm2"
 
 start() {
     echo "Starting $NAME"
+    cd $API
     $PM2 startOrReload $API/scripts/pm2-process-production.json
 }
 

@@ -11,8 +11,6 @@
             "script"             : "node_modules/.bin/babel",
             "args"               : [
                 "bundle-es6", 
-                "--blacklist=regenerator", 
-                "--plugins=object-assign",
                 "--out-dir", 
                 "bundle", 
                 "--watch"
@@ -25,7 +23,7 @@
             "instances"          : 1,
             "log_date_format"    : "YYYY-MM-DD HH:mm Z",
             "merge_logs"         : false,
-            "node_args"          : ["--harmony", "--harmony-proxies"],
+            "node_args"          : ["--harmony", "--harmony_proxies"],
             "cwd"                : "bundle",
             "script"             : "console.js",
             "watch"              : true,

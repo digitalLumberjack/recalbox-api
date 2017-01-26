@@ -1,0 +1,4 @@
+End point `/configuration`
+==========================
+
+

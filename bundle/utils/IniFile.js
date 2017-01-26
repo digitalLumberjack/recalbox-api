@@ -4,14 +4,6 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
 var _solfegejs = require("solfegejs");
 
 var _solfegejs2 = _interopRequireDefault(_solfegejs);
@@ -20,19 +12,21 @@ var _ini = require("ini");
 
 var _ini2 = _interopRequireDefault(_ini);
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 /**
  * An util class to manipulate INI file
  */
-
-var IniFile = (function () {
+class IniFile {
     /**
      * Constructor
      *
      * @param   {string}    filePath    The INI file path
      */
-
-    function IniFile(filePath) {
-        _classCallCheck(this, IniFile);
+    constructor(filePath) {
+        if (!(typeof filePath === 'string')) {
+            throw new TypeError("Value of argument \"filePath\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(filePath));
+        }
 
         // Save the file path
         this.filePath = filePath;
@@ -46,126 +40,164 @@ var IniFile = (function () {
      *
      * @param   {object}    values  the default values
      */
+    setDefaultValues(values) {
+        this.defaultValues = values;
+    }
 
-    _createClass(IniFile, [{
-        key: "setDefaultValues",
-        value: function setDefaultValues(values) {
-            this.defaultValues = values;
-        }
+    /**
+     * Get the file content
+     *
+     * @public
+     * @return  {string}    The content
+     */
+    *getContent() {
+        let content = yield _solfegejs2.default.util.Node.fs.readFile(this.filePath);
+        content = content.toString("utf8");
 
-        /**
-         * Get the file content
-         *
-         * @public
-         * @return  {string}    The content
-         */
-    }, {
-        key: "getContent",
-        value: function* getContent() {
-            var content = yield _solfegejs2["default"].util.Node.fs.readFile(this.filePath);
-            content = content.toString("utf8");
+        return content;
+    }
 
-            return content;
-        }
+    /**
+     * Set the new file content
+     *
+     * @public
+     * @param   {string}    content     The new content
+     */
+    *setContent(content) {
+        yield _solfegejs2.default.util.Node.fs.writeFile(this.filePath, content);
+    }
 
-        /**
-         * Set the new file content
-         *
-         * @public
-         * @param   {string}    content     The new content
-         */
-    }, {
-        key: "setContent",
-        value: function* setContent(content) {
-            yield _solfegejs2["default"].util.Node.fs.writeFile(this.filePath, content);
-        }
+    /**
+     * Extract parameters from the file
+     *
+     * @public
+     * @param   {RegExp}    regexp  The pattern of the parameter name
+     * @return  {object}            The parameters
+     */
+    *getParameters(regexp) {
+        // Build the parameters based on the default values and the values from the INI file
+        let content = yield this.getContent();
+        let iniParameters = _ini2.default.parse(content);
+        let parameters = Object.assign(this.defaultValues, iniParameters);
 
-        /**
-         * Extract parameters from the file
-         *
-         * @public
-         * @param   {RegExp}    regexp  The pattern of the parameter name
-         * @return  {object}            The parameters
-         */
-    }, {
-        key: "getParameters",
-        value: function* getParameters() {
-            var regexp = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
-
-            // Build the parameters based on the default values and the values from the INI file
-            var content = yield this.getContent();
-            var iniParameters = _ini2["default"].parse(content);
-            var parameters = _extends(this.defaultValues, iniParameters);
-
-            // Filter the parameters if the regexp is provided
-            if (regexp instanceof RegExp) {
-                var filteredParameters = {};
-                for (var key in parameters) {
-                    if (key.match(regexp)) {
-                        filteredParameters[key] = parameters[key];
-                    }
+        // Filter the parameters if the regexp is provided
+        if (regexp instanceof RegExp) {
+            let filteredParameters = {};
+            for (let key in parameters) {
+                if (key.match(regexp)) {
+                    filteredParameters[key] = parameters[key];
                 }
-                return filteredParameters;
             }
-
-            return parameters;
+            return filteredParameters;
         }
 
-        /**
-         * Get a parameter value
-         *
-         * @param   {string}        name            The parameter name
-         * @param   {string|number} defaultValue    The default value
-         * @return  {string|number}                 The value
-         */
-    }, {
-        key: "getParameterValue",
-        value: function* getParameterValue(name, defaultValue) {
-            // Extract the value from the main configuration
-            var parameters = yield this.getParameters();
-            if (parameters.hasOwnProperty(name)) {
-                return parameters[name];
-            }
+        return parameters;
+    }
 
-            return defaultValue;
+    /**
+     * Get a parameter value
+     *
+     * @param   {string}        name            The parameter name
+     * @param   {string|number} defaultValue    The default value
+     * @return  {string|number}                 The value
+     */
+    *getParameterValue(name, defaultValue) {
+        if (!(typeof name === 'string')) {
+            throw new TypeError("Value of argument \"name\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(name));
         }
 
-        /**
-         * Set a parameter value
-         *
-         * @param   {string}        name    The parameter name
-         * @param   {string|number} value   The new value
-         */
-    }, {
-        key: "setParameterValue",
-        value: function* setParameterValue(name, value) {
-            // Get the content
-            var content = yield this.getContent();
+        // Extract the value from the main configuration
+        let parameters = yield this.getParameters();
+        if (parameters.hasOwnProperty(name)) {
+            return parameters[name];
+        }
 
-            // The pattern to find the parameter line
-            var regexp = new RegExp(";?" + name + " *=.*", "im");
+        return defaultValue;
+    }
 
-            // Create the parameter if it doesn't exist
-            if (content.search(regexp) === -1) {
-                content += "\n;" + name + "=";
-            }
+    /**
+     * Set a parameter value
+     *
+     * @param   {string}        name    The parameter name
+     * @param   {string|number} value   The new value
+     */
+    *setParameterValue(name, value) {
+        if (!(typeof name === 'string')) {
+            throw new TypeError("Value of argument \"name\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(name));
+        }
 
-            // If the value is not a number,
-            // then wrap the value with double quotes
-            if (isNaN(value)) {
-                value = _ini2["default"].safe(value);
-                content = content.replace(regexp, name + "=\"" + value + "\"");
+        // Get the content
+        let content = yield this.getContent();
+
+        // The pattern to find the parameter line
+        let regexp = new RegExp(`;?${ name } *=.*`, "im");
+
+        // Create the parameter if it doesn't exist
+        if (content.search(regexp) === -1) {
+            content += `\n;${ name }=`;
+        }
+
+        // If the value is not a number,
+        // then wrap the value with double quotes
+        if (isNaN(value)) {
+            value = _ini2.default.safe(value);
+            content = content.replace(regexp, `${ name }="${ value }"`);
+        } else {
+            content = content.replace(regexp, `${ name }=${ value }`);
+        }
+
+        // Update the content
+        yield this.setContent(content);
+    }
+}
+exports.default = IniFile;
+
+function _inspect(input) {
+    function _ref2(key) {
+        return (/^([A-Z_$][A-Z0-9_$]*)$/i.test(key) ? key : JSON.stringify(key)) + ': ' + _inspect(input[key]) + ';';
+    }
+
+    function _ref(item) {
+        return _inspect(item) === first;
+    }
+
+    if (input === null) {
+        return 'null';
+    } else if (input === undefined) {
+        return 'void';
+    } else if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') {
+        return typeof input;
+    } else if (Array.isArray(input)) {
+        if (input.length > 0) {
+            var first = _inspect(input[0]);
+
+            if (input.every(_ref)) {
+                return first.trim() + '[]';
             } else {
-                content = content.replace(regexp, name + "=" + value);
+                return '[' + input.map(_inspect).join(', ') + ']';
             }
-
-            // Update the content
-            yield this.setContent(content);
+        } else {
+            return 'Array';
         }
-    }]);
+    } else {
+        var keys = Object.keys(input);
 
-    return IniFile;
-})();
+        if (!keys.length) {
+            if (input.constructor && input.constructor.name && input.constructor.name !== 'Object') {
+                return input.constructor.name;
+            } else {
+                return 'Object';
+            }
+        }
 
-exports["default"] = IniFile;
-module.exports = exports["default"];
+        var entries = keys.map(_ref2).join('\n  ');
+
+        if (input.constructor && input.constructor.name && input.constructor.name !== 'Object') {
+            return input.constructor.name + ' {\n  ' + entries + '\n}';
+        } else {
+            return '{ ' + entries + '\n}';
+        }
+    }
+}
+
+module.exports = exports['default'];

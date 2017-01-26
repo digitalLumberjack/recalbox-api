@@ -4,255 +4,218 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj["default"] = obj; return newObj; } }
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
 var _solfegejs = require("solfegejs");
 
 var _solfegejs2 = _interopRequireDefault(_solfegejs);
 
-var _utilsIniFile = require("../utils/IniFile");
+var _IniFile = require("../utils/IniFile");
 
-var _utilsIniFile2 = _interopRequireDefault(_utilsIniFile);
+var _IniFile2 = _interopRequireDefault(_IniFile);
 
-var _configConfig = require("../../config/config");
+var _config = require("../../config/config");
 
-var _configConfig2 = _interopRequireDefault(_configConfig);
+var _config2 = _interopRequireDefault(_config);
 
-var _configRecalboxDefaultValuesJson = require("../../config/recalboxDefaultValues.json");
+var _recalboxDefaultValues = require("../../config/recalboxDefaultValues.json");
 
-var _configRecalboxDefaultValuesJson2 = _interopRequireDefault(_configRecalboxDefaultValuesJson);
+var _recalboxDefaultValues2 = _interopRequireDefault(_recalboxDefaultValues);
 
-var _utilsControllerUtil = require("../utils/ControllerUtil");
+var _ControllerUtil = require("../utils/ControllerUtil");
 
-var ControllerUtil = _interopRequireWildcard(_utilsControllerUtil);
+var ControllerUtil = _interopRequireWildcard(_ControllerUtil);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
  * The access points of the configuration
  */
+class Configuration {
+  /**
+   * Get the main configuration file
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *getConfiguration(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
 
-var Configuration = (function () {
-  function Configuration() {
-    _classCallCheck(this, Configuration);
+    let iniFile = new _IniFile2.default(_config2.default.api.mainConfigurationFilePath);
+    iniFile.setDefaultValues(_recalboxDefaultValues2.default);
+
+    let content = yield iniFile.getContent();
+    let parameters = yield iniFile.getParameters();
+
+    response.statusCode = 200;
+    response.body = content;
+    response.parameters = parameters;
   }
 
-  _createClass(Configuration, [{
-    key: "getConfiguration",
+  /**
+   * Set the main configuration file
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *setConfiguration(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
 
-    /**
-     * Get the main configuration file
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-    value: function* getConfiguration(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    // Get the raw body from the request
+    let iniFile = new _IniFile2.default(_config2.default.api.mainConfigurationFilePath);
+    let body = yield request.getRawBody();
 
-      var iniFile = new _utilsIniFile2["default"](_configConfig2["default"].api.mainConfigurationFilePath);
-      iniFile.setDefaultValues(_configRecalboxDefaultValuesJson2["default"]);
+    // Update the file
+    let newContent = body.toString();
+    yield iniFile.setContent(newContent);
 
-      var content = yield iniFile.getContent();
-      var parameters = yield iniFile.getParameters();
+    // Display the new content
+    yield this.getConfiguration(request, response);
+  }
 
-      response.statusCode = 200;
-      response.body = content;
-      response.parameters = parameters;
-    }
+  /**
+   * Get the hostname
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *getHostname(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.getMainConfigurationParameterValue("system.hostname", request, response);
+  }
 
-    /**
-     * Set the main configuration file
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "setConfiguration",
-    value: function* setConfiguration(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+  /**
+   * Set the hostname
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *setHostname(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.setMainConfigurationParameterValue("system.hostname", request, response);
 
-      // Get the raw body from the request
-      var iniFile = new _utilsIniFile2["default"](_configConfig2["default"].api.mainConfigurationFilePath);
-      var body = yield request.getRawBody();
+    // Display the new value
+    yield this.getHostname(request, response);
+  }
 
-      // Update the file
-      var newContent = body.toString();
-      yield iniFile.setContent(newContent);
+  /**
+   * Get the locale
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *getLocale(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.getMainConfigurationParameterValue("system.language", request, response);
 
-      // Display the new content
-      yield this.getConfiguration(request, response);
-    }
+    // Rename the parameter
+    response.parameters = { "locale": response.parameters.language };
+  }
 
-    /**
-     * Get the hostname
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "getHostname",
-    value: function* getHostname(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.getMainConfigurationParameterValue("system.hostname", request, response);
-    }
+  /**
+   * Set the locale
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *setLocale(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.setMainConfigurationParameterValue("system.language", request, response);
 
-    /**
-     * Set the hostname
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "setHostname",
-    value: function* setHostname(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.setMainConfigurationParameterValue("system.hostname", request, response);
+    // Display the new value
+    yield this.getLocale(request, response);
+  }
 
-      // Display the new value
-      yield this.getHostname(request, response);
-    }
+  /**
+   * Get the keyboard layout
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *getKeyboardLayout(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.getMainConfigurationParameterValue("system.kblayout", request, response);
 
-    /**
-     * Get the locale
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "getLocale",
-    value: function* getLocale(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.getMainConfigurationParameterValue("system.language", request, response);
+    // Rename the parameter
+    response.parameters = { "keyboardlayout": response.parameters.kblayout };
+  }
 
-      // Rename the parameter
-      response.parameters = { "locale": response.parameters.language };
-    }
+  /**
+   * Set the keyboard layout
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *setKeyboardLayout(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.setMainConfigurationParameterValue("system.kblayout", request, response);
 
-    /**
-     * Set the locale
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "setLocale",
-    value: function* setLocale(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.setMainConfigurationParameterValue("system.language", request, response);
+    // Display the new value
+    yield this.getKeyboardLayout(request, response);
+  }
 
-      // Display the new value
-      yield this.getLocale(request, response);
-    }
+  /**
+   * Get the timezone
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *getTimezone(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.getMainConfigurationParameterValue("system.timezone", request, response);
+  }
 
-    /**
-     * Get the keyboard layout
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "getKeyboardLayout",
-    value: function* getKeyboardLayout(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.getMainConfigurationParameterValue("system.kblayout", request, response);
+  /**
+   * Set the timezone
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *setTimezone(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.setMainConfigurationParameterValue("system.timezone", request, response);
 
-      // Rename the parameter
-      response.parameters = { "keyboardlayout": response.parameters.kblayout };
-    }
+    // Display the new value
+    yield this.getTimezone(request, response);
+  }
 
-    /**
-     * Set the keyboard layout
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "setKeyboardLayout",
-    value: function* setKeyboardLayout(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.setMainConfigurationParameterValue("system.kblayout", request, response);
+  /**
+   * Indicates if the updates are enabled
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *getUpdatesEnabled(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.getMainConfigurationParameterValue("updates.enabled", request, response);
+  }
 
-      // Display the new value
-      yield this.getKeyboardLayout(request, response);
-    }
+  /**
+   * Enable/disable the updates
+   *
+   * @public
+   * @param   {solfege.bundle.server.Request}     request     The request
+   * @param   {solfege.bundle.server.Response}    response    The response
+   */
+  *setUpdatesEnabled(request, response) {
+    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
+    yield ControllerUtil.setMainConfigurationParameterValue("updates.enabled", request, response);
 
-    /**
-     * Get the timezone
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "getTimezone",
-    value: function* getTimezone(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.getMainConfigurationParameterValue("system.timezone", request, response);
-    }
+    // Display the new value
+    yield this.getUpdatesEnabled(request, response);
+  }
 
-    /**
-     * Set the timezone
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "setTimezone",
-    value: function* setTimezone(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.setMainConfigurationParameterValue("system.timezone", request, response);
-
-      // Display the new value
-      yield this.getTimezone(request, response);
-    }
-
-    /**
-     * Indicates if the updates are enabled
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "getUpdatesEnabled",
-    value: function* getUpdatesEnabled(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.getMainConfigurationParameterValue("updates.enabled", request, response);
-    }
-
-    /**
-     * Enable/disable the updates
-     *
-     * @public
-     * @param   {solfege.bundle.server.Request}     request     The request
-     * @param   {solfege.bundle.server.Response}    response    The response
-     */
-  }, {
-    key: "setUpdatesEnabled",
-    value: function* setUpdatesEnabled(request, response) {
-      response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, OPTIONS");
-      yield ControllerUtil.setMainConfigurationParameterValue("updates.enabled", request, response);
-
-      // Display the new value
-      yield this.getUpdatesEnabled(request, response);
-    }
-  }]);
-
-  return Configuration;
-})();
-
-exports["default"] = Configuration;
-module.exports = exports["default"];
+}
+exports.default = Configuration;
+module.exports = exports['default'];

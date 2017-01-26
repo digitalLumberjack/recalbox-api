@@ -62,7 +62,7 @@ export default class IniFile
      * @param   {RegExp}    regexp  The pattern of the parameter name
      * @return  {object}            The parameters
      */
-    *getParameters(regexp = null)
+    *getParameters(regexp?)
     {
         // Build the parameters based on the default values and the values from the INI file
         let content = yield this.getContent();

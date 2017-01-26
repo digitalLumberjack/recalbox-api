@@ -1,7 +1,5 @@
 "use strict";
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
 var _fs = require("fs");
 
 var _fs2 = _interopRequireDefault(_fs);
@@ -26,19 +24,21 @@ var _Api = require("./Api");
 
 var _Api2 = _interopRequireDefault(_Api);
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 // Initialize the application
-var application = new _solfegejs2["default"].kernel.Application(__dirname);
+let application = new _solfegejs2.default.kernel.Application(__dirname);
 
 // Add the external bundles
-application.addBundle("console", new _solfegejsCli2["default"].Console());
-application.addBundle("server", new _solfegejsServer2["default"].HttpServer());
-application.addBundle("router", new _solfegejsServerRouter2["default"].Router());
+application.addBundle("console", new _solfegejsCli2.default.Console());
+application.addBundle("server", new _solfegejsServer2.default.HttpServer());
+application.addBundle("router", new _solfegejsServerRouter2.default.Router());
 
 // Add the internal bundle
-application.addBundle("api", new _Api2["default"]());
+application.addBundle("api", new _Api2.default());
 
 // Get the configuration
-var configuration = require(__dirname + "/../config/config");
+let configuration = require(__dirname + "/../config/config");
 
 // Override the application configuration
 application.overrideConfiguration(configuration);

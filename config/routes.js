@@ -685,6 +685,144 @@ module.exports = [
         controller: "@api.controllers.GameSystem",
         action: "deleteRom",
         policies: ["methodIsDelete"]
+    },
+    {
+        id: "system.launcher",
+        url: "/systems/:id/launcher",
+        controller: "@api.controllers.GameSystem",
+        action: "launchRom",
+        policies: ["methodIsPost"]
+    },
+
+    // GAMEPADS
+    {
+        id: "gamepad.connect",
+        url: "/gamepads",
+        controller: "@api.controllers.Gamepad",
+        action: "connect",
+        policies: ["methodIsPost"]
+    },
+    {
+        id: "gamepad.disconnect",
+        url: "/gamepads/:index",
+        controller: "@api.controllers.Gamepad",
+        action: "disconnect",
+        policies: ["methodIsDelete"]
+    },
+    {
+        id: "gamepad.direction.none",
+        url: "/gamepads/:index/directions/none",
+        controller: "@api.controllers.Gamepad",
+        action: "setDirectionNone",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.direction.left",
+        url: "/gamepads/:index/directions/left",
+        controller: "@api.controllers.Gamepad",
+        action: "setDirectionLeft",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.direction.right",
+        url: "/gamepads/:index/directions/right",
+        controller: "@api.controllers.Gamepad",
+        action: "setDirectionRight",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.direction.up",
+        url: "/gamepads/:index/directions/up",
+        controller: "@api.controllers.Gamepad",
+        action: "setDirectionUp",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.direction.down",
+        url: "/gamepads/:index/directions/down",
+        controller: "@api.controllers.Gamepad",
+        action: "setDirectionDown",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.a",
+        url: "/gamepads/:index/buttons/a",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonA",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.b",
+        url: "/gamepads/:index/buttons/b",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonB",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.x",
+        url: "/gamepads/:index/buttons/x",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonX",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.y",
+        url: "/gamepads/:index/buttons/y",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonY",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.tl",
+        url: "/gamepads/:index/buttons/tl",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonL",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.tr",
+        url: "/gamepads/:index/buttons/tr",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonR",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.select",
+        url: "/gamepads/:index/buttons/select",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonSelect",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.button.start",
+        url: "/gamepads/:index/buttons/start",
+        controller: "@api.controllers.Gamepad",
+        action: "setButtonStart",
+        policies: ["methodIsPut"]
+    },
+    {
+        id: "gamepad.combo",
+        url: "/gamepads/:index/combo",
+        controller: "@api.controllers.Gamepad",
+        action: "createCombo",
+        policies: ["methodIsPost"]
+    },
+
+    // DEVICE
+    {
+        id: "device.reboots:post",
+        url: "/reboots",
+        controller: "@api.controllers.Device",
+        action: "requestReboot",
+        policies: ["methodIsPost"]
+    },
+    {
+        id: "device.shutdowns:post",
+        url: "/shutdowns",
+        controller: "@api.controllers.Device",
+        action: "requestShutdown",
+        policies: ["methodIsPost"]
     }
+
 ];
 

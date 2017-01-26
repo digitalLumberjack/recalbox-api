@@ -4,7 +4,7 @@ var request = require('supertest');
 var pm2 = require('pm2');
 var xml2js = require('xml2js');
 var fs = require('fs');
-var baseUrl = "http://127.0.0.1:1337";
+var baseUrl = "http://127.0.0.1:1339";
 
 /**
  * Test the REST API
@@ -27,7 +27,7 @@ describe('REST API', function()
                 exec_mode          : "cluster",
                 instances          : 1,
                 max_memory_restart : "100M",
-                node_args          : ["--harmony", "--harmony-proxies"],
+                node_args          : ["--harmony", "--harmony_proxies"],
                 cwd                : "test/rest",
                 script             : "console.js",
                 args               : ["server:start"]

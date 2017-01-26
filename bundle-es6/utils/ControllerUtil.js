@@ -40,7 +40,7 @@ let moveFile = function*(source:string, destination:string)
  * @param   {solfege.bundle.server.Response}    response    The response
  * @param   {string}                            fallback    The fallback parameter name
  */
-export function* getMainConfigurationParameterValue(name:string, request, response, fallback:string = null)
+export function* getMainConfigurationParameterValue(name:string, request, response, fallback?:string)
 {
     // The request is a verification
     if (request.method === "OPTIONS") {
@@ -146,7 +146,7 @@ export function* setMainConfigurationParameterValue(name:string, request, respon
  * @param   {solfege.bundle.server.Request}     request     The request
  * @param   {solfege.bundle.server.Response}    response    The response
  */
-export function* listDirectory(path:string, itemName:string, options:object, request, response)
+export function* listDirectory(path:string, itemName:string, options:?Object, request, response)
 {
     let max = 50;
 

@@ -11,8 +11,6 @@ exports.uploadFile = uploadFile;
 exports.getFileMetadata = getFileMetadata;
 exports.deleteFile = deleteFile;
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
 var _solfegejs = require("solfegejs");
 
 var _solfegejs2 = _interopRequireDefault(_solfegejs);
@@ -21,9 +19,9 @@ var _IniFile = require("./IniFile");
 
 var _IniFile2 = _interopRequireDefault(_IniFile);
 
-var _configRecalboxDefaultValuesJson = require("../../config/recalboxDefaultValues.json");
+var _recalboxDefaultValues = require("../../config/recalboxDefaultValues.json");
 
-var _configRecalboxDefaultValuesJson2 = _interopRequireDefault(_configRecalboxDefaultValuesJson);
+var _recalboxDefaultValues2 = _interopRequireDefault(_recalboxDefaultValues);
 
 var _Pagination = require("./Pagination");
 
@@ -35,6 +33,8 @@ var _FileInfo2 = _interopRequireDefault(_FileInfo);
 
 var _child_process = require("child_process");
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 /**
  * Helpers for the controllers
  */
@@ -45,9 +45,17 @@ var _child_process = require("child_process");
  * @param   {string}    source      The source path
  * @param   {string}    destination The destination path
  */
-var moveFile = function* moveFile(source, destination) {
+let moveFile = function* (source, destination) {
+    if (!(typeof source === 'string')) {
+        throw new TypeError("Value of argument \"source\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(source));
+    }
+
+    if (!(typeof destination === 'string')) {
+        throw new TypeError("Value of argument \"destination\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(destination));
+    }
+
     return new Promise(function (resolve, reject) {
-        var command = "mv \"" + source + "\" \"" + destination + "\"";
+        let command = `mv "${ source }" "${ destination }"`;
         (0, _child_process.exec)(command, function (error) {
             if (error) {
                 reject(error);
@@ -67,9 +75,14 @@ var moveFile = function* moveFile(source, destination) {
  * @param   {solfege.bundle.server.Response}    response    The response
  * @param   {string}                            fallback    The fallback parameter name
  */
+function* getMainConfigurationParameterValue(name, request, response, fallback) {
+    if (!(typeof name === 'string')) {
+        throw new TypeError("Value of argument \"name\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(name));
+    }
 
-function* getMainConfigurationParameterValue(name, request, response) {
-    var fallback = arguments.length <= 3 || arguments[3] === undefined ? null : arguments[3];
+    if (!(fallback === undefined || typeof fallback === 'string')) {
+        throw new TypeError("Value of optional argument \"fallback\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(fallback));
+    }
 
     // The request is a verification
     if (request.method === "OPTIONS") {
@@ -77,18 +90,18 @@ function* getMainConfigurationParameterValue(name, request, response) {
     }
 
     // Get the last part of the parameter name
-    var nameParts = name.split(".");
-    var nameLastPart = nameParts.pop();
+    let nameParts = name.split(".");
+    let nameLastPart = nameParts.pop();
 
     // Get the value
-    var iniFile = new _IniFile2["default"](request.configuration.mainConfigurationFilePath);
-    iniFile.setDefaultValues(_configRecalboxDefaultValuesJson2["default"]);
-    var value = yield iniFile.getParameterValue(name);
+    let iniFile = new _IniFile2.default(request.configuration.mainConfigurationFilePath);
+    iniFile.setDefaultValues(_recalboxDefaultValues2.default);
+    let value = yield iniFile.getParameterValue(name);
 
     // Build the response with a fallback
-    var settings = {};
+    let settings = {};
     if (fallback) {
-        var defaultValue = yield iniFile.getParameterValue(fallback);
+        let defaultValue = yield iniFile.getParameterValue(fallback);
         settings[nameLastPart] = defaultValue;
     }
     if (value) {
@@ -109,26 +122,29 @@ function* getMainConfigurationParameterValue(name, request, response) {
  * @param   {solfege.bundle.server.Request}     request     The request
  * @param   {solfege.bundle.server.Response}    response    The response
  */
-
 function* getMainConfigurationParameters(pattern, request, response) {
+    if (!(pattern instanceof RegExp)) {
+        throw new TypeError("Value of argument \"pattern\" violates contract.\n\nExpected:\nRegExp\n\nGot:\n" + _inspect(pattern));
+    }
+
     // The request is a verification
     if (request.method === "OPTIONS") {
         return;
     }
 
     // Extract the settings from the main configuration
-    var iniFile = new _IniFile2["default"](request.configuration.mainConfigurationFilePath);
-    iniFile.setDefaultValues(_configRecalboxDefaultValuesJson2["default"]);
-    var parameters = yield iniFile.getParameters(pattern);
+    let iniFile = new _IniFile2.default(request.configuration.mainConfigurationFilePath);
+    iniFile.setDefaultValues(_recalboxDefaultValues2.default);
+    let parameters = yield iniFile.getParameters(pattern);
 
     // Sanitize the parameter names
-    var sanitizedParameters = {};
-    for (var _name in parameters) {
+    let sanitizedParameters = {};
+    for (let name in parameters) {
         // Get the last part of the parameter name
-        var nameParts = _name.split(".");
-        var nameLastPart = nameParts.pop();
+        let nameParts = name.split(".");
+        let nameLastPart = nameParts.pop();
 
-        sanitizedParameters[nameLastPart] = parameters[_name];
+        sanitizedParameters[nameLastPart] = parameters[name];
     }
 
     // Render
@@ -144,19 +160,22 @@ function* getMainConfigurationParameters(pattern, request, response) {
  * @param   {solfege.bundle.server.Request}     request     The request
  * @param   {solfege.bundle.server.Response}    response    The response
  */
-
 function* setMainConfigurationParameterValue(name, request, response) {
+    if (!(typeof name === 'string')) {
+        throw new TypeError("Value of argument \"name\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(name));
+    }
+
     // The request is a verification
     if (request.method === "OPTIONS") {
         return;
     }
 
     // Get the raw body from the request
-    var iniFile = new _IniFile2["default"](request.configuration.mainConfigurationFilePath);
-    var body = yield request.getRawBody();
+    let iniFile = new _IniFile2.default(request.configuration.mainConfigurationFilePath);
+    let body = yield request.getRawBody();
 
     // Normalize the new value
-    var newValue = body.toString();
+    let newValue = body.toString();
     if (!isNaN(newValue)) {
         body = new Number(body);
     }
@@ -175,16 +194,27 @@ function* setMainConfigurationParameterValue(name, request, response) {
  * @param   {solfege.bundle.server.Request}     request     The request
  * @param   {solfege.bundle.server.Response}    response    The response
  */
-
 function* listDirectory(path, itemName, options, request, response) {
-    var max = 50;
+    if (!(typeof path === 'string')) {
+        throw new TypeError("Value of argument \"path\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(path));
+    }
+
+    if (!(typeof itemName === 'string')) {
+        throw new TypeError("Value of argument \"itemName\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(itemName));
+    }
+
+    if (!(options == null || options instanceof Object)) {
+        throw new TypeError("Value of argument \"options\" violates contract.\n\nExpected:\n?Object\n\nGot:\n" + _inspect(options));
+    }
+
+    let max = 50;
 
     // Check if the directory exists
-    var exists = yield _solfegejs2["default"].util.Node.fs.exists(path);
+    let exists = yield _solfegejs2.default.util.Node.fs.exists(path);
     if (!exists) {
         response.statusCode = 404;
         response.parameters = {
-            error: "Directory not found: " + path
+            error: `Directory not found: ${ path }`
         };
         return;
     }
@@ -195,52 +225,36 @@ function* listDirectory(path, itemName, options, request, response) {
     }
 
     // Get the files
-    var files = yield _solfegejs2["default"].util.Node.fs.readdir(path);
-    var total = files.length;
+    let files = yield _solfegejs2.default.util.Node.fs.readdir(path);
+    let total = files.length;
 
     // Pagination
-    var pagination = new _Pagination2["default"](files, max, request);
-    var list = pagination.getList();
-    var offset = pagination.offset;
-    var limit = pagination.limit;
+    let pagination = new _Pagination2.default(files, max, request);
+    let list = pagination.getList();
+    let offset = pagination.offset;
+    let limit = pagination.limit;
 
     // Get file informations
-    var listWithMetadata = [];
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
+    let listWithMetadata = [];
 
-    try {
-        for (var _iterator = list[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var fileName = _step.value;
-
-            var fileInfo = new _FileInfo2["default"](path + "/" + fileName);
-            var metadata = yield fileInfo.getMetadata();
-            listWithMetadata.push(metadata);
-        }
-    } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion && _iterator["return"]) {
-                _iterator["return"]();
-            }
-        } finally {
-            if (_didIteratorError) {
-                throw _iteratorError;
-            }
-        }
+    if (!(list && (typeof list[Symbol.iterator] === 'function' || Array.isArray(list)))) {
+        throw new TypeError("Expected list to be iterable, got " + _inspect(list));
     }
 
-    var statusCode = 200;
+    for (let fileName of list) {
+        let fileInfo = new _FileInfo2.default(`${ path }/${ fileName }`);
+        let metadata = yield fileInfo.getMetadata();
+        listWithMetadata.push(metadata);
+    }
+
+    let statusCode = 200;
     if (listWithMetadata.length < total) {
         // Partial content
         statusCode = 206;
     }
     response.statusCode = statusCode;
-    response.setHeader("Content-Range", offset + "-" + limit + "/" + total);
-    response.setHeader("Accept-Range", itemName + " " + max);
+    response.setHeader("Content-Range", `${ offset }-${ limit }/${ total }`);
+    response.setHeader("Accept-Range", `${ itemName } ${ max }`);
     response.parameters = listWithMetadata;
 }
 
@@ -252,14 +266,17 @@ function* listDirectory(path, itemName, options, request, response) {
  * @param   {solfege.bundle.server.Request}     request         The request
  * @param   {solfege.bundle.server.Response}    response        The response
  */
-
 function* uploadFile(directoryPath, request, response) {
+    if (!(typeof directoryPath === 'string')) {
+        throw new TypeError("Value of argument \"directoryPath\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(directoryPath));
+    }
+
     // Check if the directory exists
-    var exists = yield _solfegejs2["default"].util.Node.fs.exists(directoryPath);
+    let exists = yield _solfegejs2.default.util.Node.fs.exists(directoryPath);
     if (!exists) {
         response.statusCode = 404;
         response.parameters = {
-            error: "Directory not found: " + directoryPath
+            error: `Directory not found: ${ directoryPath }`
         };
         return;
     }
@@ -270,18 +287,18 @@ function* uploadFile(directoryPath, request, response) {
     }
 
     // Get the uploaded file
-    var files = yield request.getFiles();
-    var createdFiles = [];
-    for (var field in files) {
-        var file = files[field];
-        var size = file.size;
-        var _name2 = file.name;
-        var path = file.path;
+    let files = yield request.getFiles();
+    let createdFiles = [];
+    for (let field in files) {
+        let file = files[field];
+        let size = file.size;
+        let name = file.name;
+        let path = file.path;
 
         // Move the file to the directory
-        var newPath = directoryPath + "/" + _name2;
+        let newPath = directoryPath + "/" + name;
         yield moveFile(path, newPath);
-        createdFiles.push(_name2);
+        createdFiles.push(name);
     }
 
     response.statusCode = 201;
@@ -296,17 +313,20 @@ function* uploadFile(directoryPath, request, response) {
  * @param   {solfege.bundle.server.Request}     request     The request
  * @param   {solfege.bundle.server.Response}    response    The response
  */
-
 function* getFileMetadata(filePath, request, response) {
+    if (!(typeof filePath === 'string')) {
+        throw new TypeError("Value of argument \"filePath\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(filePath));
+    }
+
     // Normalize file path
     filePath = decodeURIComponent(filePath);
 
     // Check if the file exists
-    var exists = yield _solfegejs2["default"].util.Node.fs.exists(filePath);
+    let exists = yield _solfegejs2.default.util.Node.fs.exists(filePath);
     if (!exists) {
         response.statusCode = 404;
         response.parameters = {
-            error: "File not found: " + filePath
+            error: `File not found: ${ filePath }`
         };
         return;
     }
@@ -318,8 +338,8 @@ function* getFileMetadata(filePath, request, response) {
 
     // Get file metadata
     try {
-        var fileInfo = new _FileInfo2["default"](filePath);
-        var metadata = yield fileInfo.getMetadata();
+        let fileInfo = new _FileInfo2.default(filePath);
+        let metadata = yield fileInfo.getMetadata();
 
         response.statusCode = 200;
         response.parameters = metadata;
@@ -339,17 +359,20 @@ function* getFileMetadata(filePath, request, response) {
  * @param   {solfege.bundle.server.Request}     request     The request
  * @param   {solfege.bundle.server.Response}    response    The response
  */
-
 function* deleteFile(filePath, request, response) {
+    if (!(typeof filePath === 'string')) {
+        throw new TypeError("Value of argument \"filePath\" violates contract.\n\nExpected:\nstring\n\nGot:\n" + _inspect(filePath));
+    }
+
     // Normalize file path
     filePath = decodeURIComponent(filePath);
 
     // Check if the file exists
-    var exists = yield _solfegejs2["default"].util.Node.fs.exists(filePath);
+    let exists = yield _solfegejs2.default.util.Node.fs.exists(filePath);
     if (!exists) {
         response.statusCode = 404;
         response.parameters = {
-            error: "File not found: " + filePath
+            error: `File not found: ${ filePath }`
         };
         return;
     }
@@ -361,7 +384,7 @@ function* deleteFile(filePath, request, response) {
 
     // Delete the file
     try {
-        yield _solfegejs2["default"].util.Node.fs.unlink(filePath);
+        yield _solfegejs2.default.util.Node.fs.unlink(filePath);
 
         response.statusCode = 204;
         response.parameters = {
@@ -372,5 +395,53 @@ function* deleteFile(filePath, request, response) {
         response.parameters = {
             error: error.message
         };
+    }
+}
+
+function _inspect(input) {
+    function _ref2(key) {
+        return (/^([A-Z_$][A-Z0-9_$]*)$/i.test(key) ? key : JSON.stringify(key)) + ': ' + _inspect(input[key]) + ';';
+    }
+
+    function _ref(item) {
+        return _inspect(item) === first;
+    }
+
+    if (input === null) {
+        return 'null';
+    } else if (input === undefined) {
+        return 'void';
+    } else if (typeof input === 'string' || typeof input === 'number' || typeof input === 'boolean') {
+        return typeof input;
+    } else if (Array.isArray(input)) {
+        if (input.length > 0) {
+            var first = _inspect(input[0]);
+
+            if (input.every(_ref)) {
+                return first.trim() + '[]';
+            } else {
+                return '[' + input.map(_inspect).join(', ') + ']';
+            }
+        } else {
+            return 'Array';
+        }
+    } else {
+        var keys = Object.keys(input);
+
+        if (!keys.length) {
+            if (input.constructor && input.constructor.name && input.constructor.name !== 'Object') {
+                return input.constructor.name;
+            } else {
+                return 'Object';
+            }
+        }
+
+        var entries = keys.map(_ref2).join('\n  ');
+
+        if (input.constructor && input.constructor.name && input.constructor.name !== 'Object') {
+            return input.constructor.name + ' {\n  ' + entries + '\n}';
+        } else {
+            return '{ ' + entries + '\n}';
+        }
     }
 }

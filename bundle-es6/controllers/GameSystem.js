@@ -1,5 +1,7 @@
 import solfege from "solfegejs";
+import os from "os";
 import fs from "fs";
+import xml2js from "xml2js";
 import * as ControllerUtil from "../utils/ControllerUtil";
 import IniFile from "../utils/IniFile";
 import defaultValues from "../../config/recalboxDefaultValues.json";
@@ -659,6 +661,190 @@ export default class GameSystem
             request,
             response
         );
+    }
+
+    /**
+     * Launch a ROM
+     *
+     * @todo Refactor the logic into another class
+     *
+     * @public
+     * @param   {solfege.bundle.server.Request}     request     The request
+     * @param   {solfege.bundle.server.Response}    response    The response
+     */
+    *launchRom(request, response)
+    {
+        response.setHeader("Access-Control-Allow-Methods", "POST, HEAD, OPTIONS");
+
+        // Get the file name
+        let systemId = request.getParameter("id");
+        let fileName = yield request.getRawBody();
+        fileName = fileName.toString();
+
+        // Initialize variables
+        let emulatorLauncherPath = request.configuration.emulatorLauncherPath;
+        let romsDirectoryPath = request.configuration.romsDirectoryPath;
+        let emulationstationSettingPath = request.configuration.emulationstationSettingPath;
+        let platform = os.platform();
+        let architecture = os.arch();
+
+        // Get EmulationStation settings
+        let emulationstationSettingContent = yield solfege.util.Node.fs.readFile(emulationstationSettingPath);
+        let xmlParser = new xml2js.Parser();
+        let parseString = solfege.util.Function.createPromise(xmlParser.parseString);
+        let emulationstationSetting = yield parseString(emulationstationSettingContent);
+        let emulationstationSettingStrings = emulationstationSetting.config.string;
+        let emulationstationSettingPlayers = [
+            {name: "DEFAULT", guid: ""},
+            {name: "DEFAULT", guid: ""},
+            {name: "DEFAULT", guid: ""},
+            {name: "DEFAULT", guid: ""}
+        ];
+        for (let emulationstationSettingString of emulationstationSettingStrings) {
+            let name = emulationstationSettingString.$.name;
+            let value = emulationstationSettingString.$.value;
+            switch (name) {
+                case "INPUT P1NAME":
+                    emulationstationSettingPlayers[0].name = value;
+                    break;
+
+                case "INPUT P1GUID":
+                    emulationstationSettingPlayers[0].guid = value;
+                    break;
+
+                case "INPUT P2NAME":
+                    emulationstationSettingPlayers[1].name = value;
+                    break;
+
+                case "INPUT P2GUID":
+                    emulationstationSettingPlayers[1].guid = value;
+                    break;
+
+                case "INPUT P3NAME":
+                    emulationstationSettingPlayers[2].name = value;
+                    break;
+
+                case "INPUT P3GUID":
+                    emulationstationSettingPlayers[2].guid = value;
+                    break;
+
+                case "INPUT P4NAME":
+                    emulationstationSettingPlayers[3].name = value;
+                    break;
+
+                case "INPUT P4GUID":
+                    emulationstationSettingPlayers[3].guid = value;
+                    break;
+            }
+        }
+
+        // Get available gamepads
+        let availableGamepads = [];
+        let joystickCount = yield solfege.util.Node.child_process.exec(`${__dirname}/../../libs/bin/joystickCount-${platform}-${architecture}`);
+        for (let index = 0; index < joystickCount; index++) {
+            let joystickGuid = yield solfege.util.Node.child_process.exec(`${__dirname}/../../libs/bin/joystickGuid-${platform}-${architecture} ${index}`);
+            let joystickName = yield solfege.util.Node.child_process.exec(`${__dirname}/../../libs/bin/joystickName-${platform}-${architecture} ${index}`);
+            let joystickDevicePath = `/dev/input/js${index}`;
+
+            availableGamepads.push({
+                index: index,
+                guid: joystickGuid,
+                name: joystickName,
+                devicePath: joystickDevicePath
+            });
+        }
+
+
+        // Set the launcher parameters
+        // Use emulationstation setting first
+        // Then complete with the available gamepads left
+        let emulatorLauncherParameters = {
+            system: systemId,
+            rom: `${romsDirectoryPath}/${systemId}/${fileName}`
+        };
+
+        // Check the name and guid
+        for (let settingPlayerIndex in emulationstationSettingPlayers) {
+            let settingPlayer = emulationstationSettingPlayers[settingPlayerIndex];
+            let launcherPlayerId = parseInt(settingPlayerIndex) + 1;
+
+            for (let availableGamepadIndex in availableGamepads) {
+                let availableGamepad = availableGamepads[availableGamepadIndex];
+
+                if (emulatorLauncherParameters.hasOwnProperty(`p${launcherPlayerId}index`)) {
+                    continue;
+                }
+                if (settingPlayer.name !== availableGamepad.name) {
+                    continue;
+                }
+                if (settingPlayer.guid !== availableGamepad.guid) {
+                    continue;
+                }
+
+                emulatorLauncherParameters[`p${launcherPlayerId}index`] = availableGamepad.index;
+                emulatorLauncherParameters[`p${launcherPlayerId}guid`] = availableGamepad.guid;
+                emulatorLauncherParameters[`p${launcherPlayerId}name`] = availableGamepad.name;
+                emulatorLauncherParameters[`p${launcherPlayerId}devicepath`] = availableGamepad.devicePath;
+                availableGamepads.splice(availableGamepadIndex, 1);
+            }
+        }
+
+        // Check the name only
+        for (let settingPlayerIndex in emulationstationSettingPlayers) {
+            let settingPlayer = emulationstationSettingPlayers[settingPlayerIndex];
+            let launcherPlayerId = parseInt(settingPlayerIndex) + 1;
+
+            for (let availableGamepadIndex in availableGamepads) {
+                let availableGamepad = availableGamepads[availableGamepadIndex];
+
+                if (emulatorLauncherParameters.hasOwnProperty(`p${launcherPlayerId}index`)) {
+                    continue;
+                }
+                if (settingPlayer.name !== availableGamepad.name) {
+                    continue;
+                }
+
+                emulatorLauncherParameters[`p${launcherPlayerId}index`] = availableGamepad.index;
+                emulatorLauncherParameters[`p${launcherPlayerId}guid`] = availableGamepad.guid;
+                emulatorLauncherParameters[`p${launcherPlayerId}name`] = availableGamepad.name;
+                emulatorLauncherParameters[`p${launcherPlayerId}devicepath`] = availableGamepad.devicePath;
+                availableGamepads.splice(availableGamepadIndex, 1);
+            }
+        }
+
+        // Complete with the available gamepads left
+        for (let settingPlayerIndex in emulationstationSettingPlayers) {
+            let launcherPlayerId = parseInt(settingPlayerIndex) + 1;
+
+            for (let availableGamepadIndex in availableGamepads) {
+                let availableGamepad = availableGamepads[availableGamepadIndex];
+
+                if (emulatorLauncherParameters.hasOwnProperty(`p${launcherPlayerId}index`)) {
+                    continue;
+                }
+
+                emulatorLauncherParameters[`p${launcherPlayerId}index`] = availableGamepad.index;
+                emulatorLauncherParameters[`p${launcherPlayerId}guid`] = availableGamepad.guid;
+                emulatorLauncherParameters[`p${launcherPlayerId}name`] = availableGamepad.name;
+                emulatorLauncherParameters[`p${launcherPlayerId}devicepath`] = availableGamepad.devicePath;
+                availableGamepads.splice(availableGamepadIndex, 1);
+            }
+        }
+
+
+        // Execute the command
+        let command = `python ${emulatorLauncherPath}`;
+        for (let parameterName in emulatorLauncherParameters) {
+            command += ` -${parameterName} "${emulatorLauncherParameters[parameterName]}"`;
+        }
+        solfege.util.Node.child_process.exec(command);
+
+        // Returns the command
+        response.status = 200;
+        response.parameters = {
+            success: true,
+            executed: command
+        };
     }
 
 }

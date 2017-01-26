@@ -35,7 +35,7 @@ var configuration = {
 
     // Server configuration
     server: {
-        port: 1337,
+        port: 1339,
         middlewares: [
             // Response formatter
             "@api.formatMiddleware",

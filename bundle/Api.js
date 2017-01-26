@@ -4,12 +4,6 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
 var _solfegejs = require("solfegejs");
 
 var _solfegejs2 = _interopRequireDefault(_solfegejs);
@@ -26,22 +20,20 @@ var _controllers = require("./controllers");
 
 var _controllers2 = _interopRequireDefault(_controllers);
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 /**
  * The API bundle
  *
  * @class   Api
  */
-
-var Api = (function () {
+class Api {
     /**
      * Constructor
      */
-
-    function Api() {
-        _classCallCheck(this, Api);
-
+    constructor() {
         // The controllers package
-        this.controllers = _controllers2["default"];
+        this.controllers = _controllers2.default;
 
         // Initialize the configuration
         this._configuration = {
@@ -57,134 +49,123 @@ var Api = (function () {
      * @public
      * @member  {Object}
      */
+    get configuration() {
+        return this._configuration;
+    }
 
-    _createClass(Api, [{
-        key: "overrideConfiguration",
+    /**
+     * Override the configuration of the bundles
+     *
+     * @public
+     * @param   {Object}    configuration   The configuration object
+     */
+    *overrideConfiguration(configuration) {
+        this._configuration = configuration;
+    }
 
-        /**
-         * Override the configuration of the bundles
-         *
-         * @public
-         * @param   {Object}    configuration   The configuration object
-         */
-        value: function* overrideConfiguration(configuration) {
-            this._configuration = configuration;
+    /**
+     * Format the response
+     *
+     * @public
+     * @param   {solfege.bundle.server.Request}     request     The request
+     * @param   {solfege.bundle.server.Response}    response    The response
+     * @param   {GeneratorFunction}                 next        The next function
+     */
+    *formatMiddleware(request, response, next) {
+        request.configuration = this.configuration;
+
+        // Execute the next middleware
+        yield* next;
+
+        // Allow cross domain access
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Expose-Headers", "Content-Range, Accept-Range");
+        let allowMethods = response.getHeader("Access-Control-Allow-Methods");
+        if (!allowMethods) {
+            response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, OPTIONS");
         }
 
-        /**
-         * Format the response
-         *
-         * @public
-         * @param   {solfege.bundle.server.Request}     request     The request
-         * @param   {solfege.bundle.server.Response}    response    The response
-         * @param   {GeneratorFunction}                 next        The next function
-         */
-    }, {
-        key: "formatMiddleware",
-        value: function* formatMiddleware(request, response, next) {
-            request.configuration = this.configuration;
+        // The request is a verification
+        if (request.method === "OPTIONS") {
+            response.statusCode = 200;
+            response.body = "";
+            return;
+        }
 
-            // Execute the next middleware
-            yield* next;
+        // The body is a Stream. There is no need to format the output
+        if (response.body instanceof _stream2.default) {
+            return;
+        }
 
-            // Allow cross domain access
-            response.setHeader("Access-Control-Allow-Origin", "*");
-            response.setHeader("Access-Control-Expose-Headers", "Content-Range, Accept-Range");
-            var allowMethods = response.getHeader("Access-Control-Allow-Methods");
-            if (!allowMethods) {
-                response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, OPTIONS");
-            }
+        // If the body and the parameters are empty,
+        // then it means that the URL doesn't exist
+        // @todo Use a feature of the router to do that
+        if (!response.body && (!response.parameters || Object.keys(response.parameters).length === 0)) {
+            response.statusCode = 404;
+            response.parameters = {
+                error: "Not found"
+            };
+        }
 
-            // The request is a verification
-            if (request.method === "OPTIONS") {
-                response.statusCode = 200;
-                response.body = "";
-                return;
-            }
+        // Convert the body to the requested format
+        switch (request.acceptsTypes("json", "xml", "text")) {
+            // JSON key values
+            case "json":
+                response.setHeader("Content-Type", "application/json");
+                response.body = JSON.stringify(response.parameters, null, "    ");
+                break;
 
-            // The body is a Stream. There is no need to format the output
-            if (response.body instanceof _stream2["default"]) {
-                return;
-            }
+            // XML key values
+            case "xml":
+                response.setHeader("Content-Type", "application/xml");
 
-            // If the body and the parameters are empty,
-            // then it means that the URL doesn't exist
-            // @todo Use a feature of the router to do that
-            if (!response.body && (!response.parameters || Object.keys(response.parameters).length === 0)) {
-                response.statusCode = 404;
-                response.parameters = {
-                    error: "Not found"
-                };
-            }
-
-            // Convert the body to the requested format
-            switch (request.acceptsTypes("json", "xml", "text")) {
-                // JSON key values
-                case "json":
-                    response.setHeader("Content-Type", "application/json");
-                    response.body = JSON.stringify(response.parameters, null, "    ");
-                    break;
-
-                // XML key values
-                case "xml":
-                    response.setHeader("Content-Type", "application/xml");
-
-                    var body = undefined;
-                    if (Array.isArray(response.parameters)) {
-                        body = (0, _js2xmlparser2["default"])("response", { item: response.parameters });
+                let body;
+                if (Array.isArray(response.parameters)) {
+                    body = (0, _js2xmlparser2.default)("response", { item: response.parameters });
+                } else {
+                    body = (0, _js2xmlparser2.default)("response", response.parameters);
+                }
+                /*
+                let body = `<?xml version="1.0" encoding="UTF-8" ?>\n<response>\n`;
+                for (let key in response.parameters) {
+                    let value = response.parameters[key];
+                    body += `<${key}>`;
+                    if (!isNaN(value)) {
+                        body += value;
                     } else {
-                        body = (0, _js2xmlparser2["default"])("response", response.parameters);
+                        body += `<![CDATA[${value}]]>`;
                     }
-                    /*
-                    let body = `<?xml version="1.0" encoding="UTF-8" ?>\n<response>\n`;
+                    body += `</${key}>\n`;
+                }
+                body += `</response>`;
+                */
+                response.body = body;
+                break;
+
+            // Plain text
+            default:
+            case "text":
+                response.setHeader("Content-Type", "text/plain");
+
+                // If the body is empty, then use the parameters
+                if (!response.body && response.parameters) {
+                    let body = "";
                     for (let key in response.parameters) {
                         let value = response.parameters[key];
-                        body += `<${key}>`;
-                        if (!isNaN(value)) {
-                            body += value;
-                        } else {
-                            body += `<![CDATA[${value}]]>`;
-                        }
-                        body += `</${key}>\n`;
-                    }
-                    body += `</response>`;
-                    */
-                    response.body = body;
-                    break;
-
-                // Plain text
-                default:
-                case "text":
-                    response.setHeader("Content-Type", "text/plain");
-
-                    // If the body is empty, then use the parameters
-                    if (!response.body && response.parameters) {
-                        var _body = "";
-                        for (var key in response.parameters) {
-                            var value = response.parameters[key];
-                            if (value instanceof Object) {
-                                for (var valueKey in value) {
-                                    value = value[valueKey];
-                                    break;
-                                }
+                        if (value instanceof Object) {
+                            for (let valueKey in value) {
+                                value = value[valueKey];
+                                break;
                             }
-
-                            _body += key + "=" + value + "\n";
                         }
-                        response.body = _body;
+
+                        body += `${ key }=${ value }\n`;
                     }
-                    break;
-            }
+                    response.body = body;
+                }
+                break;
         }
-    }, {
-        key: "configuration",
-        get: function get() {
-            return this._configuration;
-        }
-    }]);
-
-    return Api;
-})();
-
-exports["default"] = Api;
-module.exports = exports["default"];
+    }
+}
+exports.default = Api;
+module.exports = exports['default'];
